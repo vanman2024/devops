@@ -109,21 +109,13 @@ jobs:
         # Add and commit changes
         git add devops/
         VERSION_NUM=$(jq -r .version ../VERSION)
-        git commit -m "feat: auto-update devops to ${VERSION_NUM}
-
-Automated deployment from vanman2024/devops
-Source commit: $GITHUB_SHA"
+        git commit -m "feat: auto-update devops to ${VERSION_NUM} (automated from $GITHUB_SHA)"
         
         # Push and create PR
         git push origin "$BRANCH_NAME"
         gh pr create \
           --title "Auto-update DevOps ${VERSION_NUM}" \
-          --body "Automated deployment of DevOps tooling from vanman2024/devops
-
-Version: ${VERSION_NUM}
-Source commit: $GITHUB_SHA
-
-This PR was created automatically by the version management workflow." \
+          --body "Automated deployment of DevOps tooling from vanman2024/devops. Version: ${VERSION_NUM}, Source commit: $GITHUB_SHA. This PR was created automatically by the version management workflow." \
           --base main \
           --head "$BRANCH_NAME"
         

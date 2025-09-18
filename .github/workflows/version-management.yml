@@ -39,6 +39,7 @@ jobs:
           @semantic-release/exec
 
     - name: Update VERSION file and create release
+      continue-on-error: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
@@ -71,7 +72,7 @@ jobs:
         npx semantic-release
 
     - name: Deploy to template repository
-      if: success()
+      if: always()
       env:
         GITHUB_TOKEN: ${{ secrets.PAT_TOKEN || secrets.PERSONAL_ACCESS_TOKEN || secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
       run: |

@@ -16,7 +16,7 @@ jobs:
   version-management:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -42,7 +42,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        cat > .releaserc.json <<'RC'
+        # Create semantic-release config
+        cat > .releaserc.json << 'EOF'
         {
           "branches": ["main"],
           "plugins": [
@@ -64,59 +65,72 @@ jobs:
             "@semantic-release/github"
           ]
         }
-        RC
+        EOF
+        
+        # Run semantic-release
         npx semantic-release
 
     - name: Deploy to template repository
       if: success()
       env:
-        GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.PAT_TOKEN || secrets.PERSONAL_ACCESS_TOKEN || secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
       run: |
-        git clone https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/vanman2024/multi-agent-claude-code.git template-repo
+        # Clone the template repository with authentication
+        git clone https://x-access-token:$GITHUB_TOKEN@github.com/vanman2024/multi-agent-claude-code.git template-repo
         cd template-repo
+        
+        # Configure git
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         
+        # Create a new branch for this deployment
         BRANCH_NAME="auto-deploy/devops-$(date +%Y%m%d-%H%M%S)"
-        git checkout -b "$BRANCH_NAME"
+        git checkout -b $BRANCH_NAME
         
-        # Remove and recreate devops directory
-        rm -rf devops
-        mkdir -p devops
+        # Copy DevOps components to template repo (production files only)
+        rm -rf devops/ 2>/dev/null || true
+        mkdir -p devops/
         
-        # Copy DevOps system (excluding development files)
-        rsync -a --delete \
-          --exclude '.git/' \
-          --exclude '.github/' \
-          --exclude 'deploy-to-template.sh' \
-          --exclude 'tests/' \
-          --exclude 'venv/' \
-          --exclude '__pycache__/' \
-          --exclude '*.pyc' \
-          --exclude '*.pyo' \
-          --exclude '.pytest_cache/' \
-          ../ devops/
+        # Copy production code and configs (no tests)
+        cp -r ../ops devops/ 2>/dev/null || true
+        cp -r ../deploy devops/ 2>/dev/null || true  
+        cp -r ../ci devops/ 2>/dev/null || true
+        cp ../pyproject.toml devops/ 2>/dev/null || true
+        cp ../deploy-to-template.sh devops/ 2>/dev/null || true
+        cp ../README.md devops/ 2>/dev/null || true
         
-        # Copy VERSION file
+        # CRITICAL: Update VERSION file to match source repo
         cp ../VERSION devops/VERSION
+        # Also create the legacy devops-VERSION file
+        cp ../VERSION devops-VERSION
         
-        # Check if there are changes to deploy
+        # Check if there are any changes
         if git diff --quiet && git diff --cached --quiet; then
           echo "No changes to deploy"
           exit 0
         fi
         
-        # Add and commit changes
-        git add devops/
-        VERSION_NUM=$(jq -r .version ../VERSION)
-        git commit -m "feat: auto-update devops to ${VERSION_NUM} (automated from $GITHUB_SHA)"
+        # Commit and push changes
+        git add -A
+        git commit -m "feat: Auto-deploy DevOps components $(cat ../VERSION | jq -r .version)
+
+        Auto-deployment from vanman2024/devops
+        Commit: $GITHUB_SHA
+        Build date: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
         
-        # Push and create PR
-        git push origin "$BRANCH_NAME"
+        git push origin $BRANCH_NAME
+        
+        # Create pull request using GitHub CLI
         gh pr create \
-          --title "Auto-update DevOps ${VERSION_NUM}" \
-          --body "Automated deployment of DevOps tooling from vanman2024/devops. Version: ${VERSION_NUM}, Source commit: $GITHUB_SHA. This PR was created automatically by the version management workflow." \
-          --base main \
-          --head "$BRANCH_NAME"
+          --title "Auto-deploy DevOps $(cat ../VERSION | jq -r .version)" \
+          --body "Automated deployment of DevOps components from vanman2024/devops
         
-        echo "✅ Successfully deployed DevOps ${VERSION_NUM} to template repository"
+        ## Changes
+        - Updated DevOps automation tools
+        - Version: $(cat ../VERSION | jq -r .version)
+        - Source commit: $GITHUB_SHA
+        
+        This PR was automatically created by the DevOps repository's semantic versioning workflow." \
+          --base main \
+          --head $BRANCH_NAME
+

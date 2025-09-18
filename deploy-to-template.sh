@@ -46,6 +46,7 @@ rsync -a \
   --exclude '__pycache__/' \
   --exclude '.pytest_cache/' \
   --exclude '.git/' \
+  --exclude '.github/' \
   --exclude '*.pyc' \
   --exclude '*.pyo' \
   --exclude 'deploy-to-template.sh' \

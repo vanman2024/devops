@@ -41,3 +41,4 @@ and `ops/commands/testing/run_tests.py` to add categories or change defaults.
 # Auto-deploy workflow fixed
 # Auto-deploy workflow fully operational
 # Restored working workflow
+# Fixed auto-deploy: no deploy scripts in template, auto-merge enabled

@@ -304,3 +304,4 @@ After a staging deploy, export the production bundle with the Example Package ve
 cat /tmp/multi-agent-template/VERSION  # prints the Example Package version from agentswarm.toml
 ```
 # Test auto-deployment with PAT token
+# DevOps sync Wed Sep 17 23:02:01 PDT 2025

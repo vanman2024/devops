@@ -16,7 +16,7 @@ jobs:
   version-management:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -42,8 +42,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        # Create semantic-release config
-        cat > .releaserc.json << 'EOF'
+        cat > .releaserc.json <<'RC'
         {
           "branches": ["main"],
           "plugins": [
@@ -65,81 +64,39 @@ jobs:
             "@semantic-release/github"
           ]
         }
-        EOF
-        
-        # Run semantic-release
+RC
         npx semantic-release
 
-    - name: Deploy to template repository
+    - name: Deploy DevOps folder to template repository
       if: success()
       env:
         GITHUB_TOKEN: ${{ secrets.PAT_TOKEN || secrets.PERSONAL_ACCESS_TOKEN || secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
       run: |
-        # Clone the template repository with authentication
         git clone https://x-access-token:$GITHUB_TOKEN@github.com/vanman2024/multi-agent-claude-code.git template-repo
         cd template-repo
-        
-        # Configure git
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
-        
-        # Create a new branch for this deployment
         BRANCH_NAME="auto-deploy/devops-$(date +%Y%m%d-%H%M%S)"
-        git checkout -b $BRANCH_NAME
-        
-        # Copy DevOps components to template repo (production files only)
-        rm -rf devops/ 2>/dev/null || true
-        mkdir -p devops/
-        
-        # Copy production code and configs (no tests)
-        cp -r ../ops devops/ 2>/dev/null || true
-        cp -r ../deploy devops/ 2>/dev/null || true  
-        cp -r ../ci devops/ 2>/dev/null || true
-        cp ../pyproject.toml devops/ 2>/dev/null || true
-        cp ../deploy-to-template.sh devops/ 2>/dev/null || true
-        cp ../README.md devops/ 2>/dev/null || true
-        
-        # CRITICAL: Update VERSION file to match source repo
+        git checkout -b "$BRANCH_NAME"
+        rm -rf devops
+        mkdir -p devops
+        rsync -a --delete \
+          --exclude '.git/' \
+          --exclude '.github/' \
+          --exclude 'deploy-to-template.sh' \
+          --exclude 'tests/' \
+          --exclude 'venv/' \
+          ../ devops/
         cp ../VERSION devops/VERSION
-        # Also create the legacy devops-VERSION file
-        cp ../VERSION devops-VERSION
-        
-        # Check if there are any changes
         if git diff --quiet && git diff --cached --quiet; then
           echo "No changes to deploy"
           exit 0
         fi
-        
-        # Commit and push changes
-        git add -A
-        git commit -m "feat: Auto-deploy DevOps components $(cat ../VERSION | jq -r .version)
-
-        Auto-deployment from vanman2024/devops
-        Commit: $GITHUB_SHA
-        Build date: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-        
-        git push origin $BRANCH_NAME
-        
-        # Create pull request using GitHub CLI
-        PR_NUMBER=$(gh pr create \
-          --title "Auto-deploy DevOps $(cat ../VERSION | jq -r .version)" \
-          --body "Automated deployment of DevOps components from vanman2024/devops
-        
-        ## Changes
-        - Updated DevOps automation tools
-        - Version: $(cat ../VERSION | jq -r .version)
-        - Source commit: $GITHUB_SHA
-        
-        This PR was automatically created by the DevOps repository's semantic versioning workflow." \
+        git add devops VERSION devops/VERSION
+        git commit -m "feat: auto-update devops ${GITHUB_SHA}"
+        git push origin "$BRANCH_NAME"
+        gh pr create \
+          --title "Auto-update DevOps ${GITHUB_SHA}" \
+          --body "Automated deployment of DevOps tooling from vanman2024/devops\n\nVersion: $(cat ../VERSION | jq -r .version)\nSource commit: $GITHUB_SHA" \
           --base main \
-          --head $BRANCH_NAME \
-          --json number \
-          --jq '.number')
-        
-        echo "Created PR #$PR_NUMBER"
-        
-        # Auto-merge the PR immediately
-        echo "Auto-merging PR #$PR_NUMBER..."
-        gh pr merge $PR_NUMBER --squash --delete-branch --body "Auto-merged DevOps deployment $(cat ../VERSION | jq -r .version)"
-        
-        echo "✅ DevOps components auto-deployed and merged!"
+          --head "$BRANCH_NAME"

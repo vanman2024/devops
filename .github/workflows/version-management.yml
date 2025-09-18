@@ -38,9 +38,10 @@ jobs:
           @semantic-release/github \
           @semantic-release/exec
 
-    - name: Update VERSION file and create release
+    - name: Update VERSION file, create release, and deploy to template
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        DEPLOY_TOKEN: ${{ secrets.PAT_TOKEN || secrets.PERSONAL_ACCESS_TOKEN || secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
       run: |
         cat > .releaserc.json <<'RC'
         {
@@ -51,7 +52,8 @@ jobs:
             [
               "@semantic-release/exec",
               {
-                "prepareCmd": "echo '{\"version\": \"v${nextRelease.version}\", \"commit\": \"'$GITHUB_SHA'\", \"build_date\": \"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'\", \"build_type\": \"production\"}' > VERSION"
+                "prepareCmd": "echo '{\"version\": \"v${nextRelease.version}\", \"commit\": \"'$GITHUB_SHA'\", \"build_date\": \"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'\", \"build_type\": \"production\"}' > VERSION",
+                "publishCmd": "./deploy-template-after-release.sh"
               }
             ],
             [
@@ -65,38 +67,73 @@ jobs:
           ]
         }
 RC
-        npx semantic-release
+        
+        # Create deployment script that runs after release
+        cat > deploy-template-after-release.sh <<'DEPLOY'
+#!/bin/bash
+set -euo pipefail
 
-    - name: Deploy DevOps folder to template repository
-      if: success()
-      env:
-        GITHUB_TOKEN: ${{ secrets.PAT_TOKEN || secrets.PERSONAL_ACCESS_TOKEN || secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
-      run: |
-        git clone https://x-access-token:$GITHUB_TOKEN@github.com/vanman2024/multi-agent-claude-code.git template-repo
-        cd template-repo
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        BRANCH_NAME="auto-deploy/devops-$(date +%Y%m%d-%H%M%S)"
-        git checkout -b "$BRANCH_NAME"
-        rm -rf devops
-        mkdir -p devops
-        rsync -a --delete \
-          --exclude '.git/' \
-          --exclude '.github/' \
-          --exclude 'deploy-to-template.sh' \
-          --exclude 'tests/' \
-          --exclude 'venv/' \
-          ../ devops/
-        cp ../VERSION devops/VERSION
-        if git diff --quiet && git diff --cached --quiet; then
-          echo "No changes to deploy"
-          exit 0
-        fi
-        git add devops VERSION devops/VERSION
-        git commit -m "feat: auto-update devops ${GITHUB_SHA}"
-        git push origin "$BRANCH_NAME"
-        gh pr create \
-          --title "Auto-update DevOps ${GITHUB_SHA}" \
-          --body "Automated deployment of DevOps tooling from vanman2024/devops\n\nVersion: $(cat ../VERSION | jq -r .version)\nSource commit: $GITHUB_SHA" \
-          --base main \
-          --head "$BRANCH_NAME"
+echo "🚀 Deploying DevOps v$(jq -r .version VERSION) to template repository..."
+
+git clone https://x-access-token:$DEPLOY_TOKEN@github.com/vanman2024/multi-agent-claude-code.git template-repo
+cd template-repo
+git config user.name "github-actions[bot]"
+git config user.email "github-actions[bot]@users.noreply.github.com"
+
+BRANCH_NAME="auto-deploy/devops-$(date +%Y%m%d-%H%M%S)"
+git checkout -b "$BRANCH_NAME"
+
+# Remove and recreate devops directory
+rm -rf devops
+mkdir -p devops
+
+# Copy DevOps system (excluding development files)
+rsync -a --delete \
+  --exclude '.git/' \
+  --exclude '.github/' \
+  --exclude 'deploy-to-template.sh' \
+  --exclude 'deploy-template-after-release.sh' \
+  --exclude 'tests/' \
+  --exclude 'venv/' \
+  --exclude '__pycache__/' \
+  --exclude '*.pyc' \
+  --exclude '*.pyo' \
+  --exclude '.pytest_cache/' \
+  ../ devops/
+
+# Copy VERSION file
+cp ../VERSION devops/VERSION
+
+# Check if there are changes to deploy
+if git diff --quiet && git diff --cached --quiet; then
+  echo "No changes to deploy"
+  exit 0
+fi
+
+# Add and commit changes
+git add devops/
+VERSION_NUM=$(jq -r .version ../VERSION)
+git commit -m "feat: auto-update devops to ${VERSION_NUM}
+
+Automated deployment from vanman2024/devops
+Source commit: $GITHUB_SHA"
+
+# Push and create PR
+git push origin "$BRANCH_NAME"
+gh pr create \
+  --title "Auto-update DevOps ${VERSION_NUM}" \
+  --body "Automated deployment of DevOps tooling from vanman2024/devops
+
+Version: ${VERSION_NUM}
+Source commit: $GITHUB_SHA
+
+This PR was created automatically by the version management workflow." \
+  --base main \
+  --head "$BRANCH_NAME"
+
+echo "✅ Successfully deployed DevOps ${VERSION_NUM} to template repository"
+DEPLOY
+
+        chmod +x deploy-template-after-release.sh
+        
+        npx semantic-release

@@ -91,12 +91,11 @@ jobs:
         rm -rf devops/ 2>/dev/null || true
         mkdir -p devops/
         
-        # Copy production code and configs (no tests)
+        # Copy production code and configs (no tests, no deployment scripts)
         cp -r ../ops devops/ 2>/dev/null || true
         cp -r ../deploy devops/ 2>/dev/null || true  
         cp -r ../ci devops/ 2>/dev/null || true
         cp ../pyproject.toml devops/ 2>/dev/null || true
-        cp ../deploy-to-template.sh devops/ 2>/dev/null || true
         cp ../README.md devops/ 2>/dev/null || true
         
         # CRITICAL: Update VERSION file to match source repo
@@ -121,7 +120,7 @@ jobs:
         git push origin $BRANCH_NAME
         
         # Create pull request using GitHub CLI
-        gh pr create \
+        PR_URL=$(gh pr create \
           --title "Auto-deploy DevOps $(cat ../VERSION | jq -r .version)" \
           --body "Automated deployment of DevOps components from vanman2024/devops
         
@@ -132,5 +131,9 @@ jobs:
         
         This PR was automatically created by the DevOps repository's semantic versioning workflow." \
           --base main \
-          --head $BRANCH_NAME
+          --head $BRANCH_NAME)
+        
+        # Auto-merge the PR
+        gh pr merge $PR_URL --squash --delete-branch
+        echo "✅ Auto-merged PR: $PR_URL"
 

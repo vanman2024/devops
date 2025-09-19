@@ -128,6 +128,11 @@ jobs:
           --head $BRANCH_NAME)
         
         # Auto-merge the PR
-        gh pr merge $PR_URL --squash --delete-branch
-        echo "✅ Auto-merged PR: $PR_URL"
+        echo "🔄 Attempting to auto-merge PR: $PR_URL"
+        if gh pr merge $PR_URL --squash --delete-branch; then
+          echo "✅ Auto-merged PR: $PR_URL"
+        else
+          echo "❌ Auto-merge failed, PR created but requires manual merge: $PR_URL"
+          exit 1
+        fi
 

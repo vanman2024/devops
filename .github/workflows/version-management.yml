@@ -88,21 +88,10 @@ jobs:
         BRANCH_NAME="auto-deploy/devops-$(date +%Y%m%d-%H%M%S)"
         git checkout -b $BRANCH_NAME
         
-        # Copy DevOps components to template repo (production files only)
-        rm -rf devops/ 2>/dev/null || true
-        mkdir -p devops/
-        
-        # Copy production code and configs (no tests, no deployment scripts)
-        cp -r ../ops devops/ 2>/dev/null || true
-        cp -r ../deploy devops/ 2>/dev/null || true  
-        cp -r ../ci devops/ 2>/dev/null || true
-        cp ../pyproject.toml devops/ 2>/dev/null || true
-        cp ../README.md devops/ 2>/dev/null || true
-        
-        # CRITICAL: Update VERSION file to match source repo
-        cp ../VERSION devops/VERSION
-        # Also create the legacy devops-VERSION file
-        cp ../VERSION devops-VERSION
+        # Use intelligent sync script to copy ALL application files (excluding dev/test)
+        echo "🚀 Using intelligent auto-deploy sync..."
+        chmod +x ../scripts/intelligent-auto-deploy.sh
+        ../scripts/intelligent-auto-deploy.sh . ..
         
         # Check if there are any changes
         if git diff --quiet && git diff --cached --quiet; then

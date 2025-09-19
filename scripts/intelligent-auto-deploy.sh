@@ -174,9 +174,9 @@ find devops/ -maxdepth 1 -type d | sort | sed 's/devops\//   ✅ /'
 echo "🚫 Development files excluded (sampling):"
 excluded_count=0
 for pattern in "*/tests/*" "*/__pycache__/*" "*/.git/*" "*/node_modules/*"; do
-    if find "$SOURCE_DIR" -path "$pattern" 2>/dev/null | head -1 | grep -q .; then
+    if find "$SOURCE_DIR" -path "$pattern" 2>/dev/null | head -1 | grep -q . 2>/dev/null; then
         echo "   🚫 $pattern"
-        ((excluded_count++))
+        excluded_count=$((excluded_count + 1))
     fi
 done
 

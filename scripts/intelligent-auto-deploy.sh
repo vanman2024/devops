@@ -122,6 +122,10 @@ EXCLUDE_PATTERNS=(
     # DevOps-specific exclusions
     "deploy-to-template.sh"
     "pyproject.toml"
+    
+    # Workflow-generated directories
+    "template-repo"
+    "template-repo/"
 )
 
 # Build rsync exclude arguments

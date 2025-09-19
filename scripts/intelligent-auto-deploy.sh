@@ -48,6 +48,8 @@ EXCLUDE_PATTERNS=(
     # Development directories
     "*/.pytest_cache/*"
     "*/node_modules/*"
+    "node_modules"
+    "node_modules/"
     "*/venv/*"
     "*/.venv/*"
     "*/env/*"

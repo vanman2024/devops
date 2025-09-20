@@ -61,7 +61,18 @@ fi
 # Copy VERSION file (contains the official semantic version)
 if [[ -f "$DEVOPS_SRC/VERSION" ]]; then
     cp "$DEVOPS_SRC/VERSION" "$TEMPLATE_DEVOPS/VERSION"
-    DEVOPS_VERSION=$(jq -r '.version' "$DEVOPS_SRC/VERSION" 2>/dev/null || cat "$DEVOPS_SRC/VERSION" | tr -d '\n')
+
+    DEVOPS_VERSION=""
+    if command -v jq >/dev/null 2>&1; then
+        # Prefer JSON parsing when jq is available
+        DEVOPS_VERSION=$(jq -r '.version // empty' "$DEVOPS_SRC/VERSION" 2>/dev/null || true)
+    fi
+
+    if [[ -z "$DEVOPS_VERSION" ]]; then
+        # Fall back to raw file contents (handles plain string VERSION files)
+        DEVOPS_VERSION=$(tr -d '\n' < "$DEVOPS_SRC/VERSION")
+    fi
+
     echo "✅ Updated VERSION to $DEVOPS_VERSION"
 else
     echo "⚠️ No VERSION file found, template will use previous version"

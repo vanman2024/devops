@@ -71,68 +71,39 @@ jobs:
         # Run semantic-release
         npx semantic-release
 
-    - name: Deploy to template repository
+    - name: Read component version
+      id: component
+      run: |
+        VERSION=$(jq -r '.version // empty' VERSION 2>/dev/null)
+        if [ -z "$VERSION" ]; then
+          VERSION="unknown"
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+    - name: Notify template repository
       if: always()
       env:
-        GITHUB_TOKEN: ${{ secrets.PAT_TOKEN || secrets.PERSONAL_ACCESS_TOKEN || secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
+        TEMPLATE_TOKEN: ${{ secrets.PAT_TOKEN || secrets.PERSONAL_ACCESS_TOKEN || secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
       run: |
-        # Clone the template repository with authentication
-        git clone https://x-access-token:$GITHUB_TOKEN@github.com/vanman2024/multi-agent-claude-code.git template-repo
-        cd template-repo
-        
-        # Configure git
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        
-        # Create a new branch for this deployment
-        BRANCH_NAME="auto-deploy/devops-$(date +%Y%m%d-%H%M%S)"
-        git checkout -b $BRANCH_NAME
-        
-        # Use intelligent sync script to copy ALL application files (excluding dev/test)
-        echo "🚀 Using intelligent auto-deploy sync..."
-        chmod +x ../scripts/intelligent-auto-deploy.sh
-        ../scripts/intelligent-auto-deploy.sh . ..
-        
-        # Check if there are any changes
-        if git diff --quiet && git diff --cached --quiet; then
-          echo "No changes to deploy"
+        if [ -z "$TEMPLATE_TOKEN" ]; then
+          echo "TEMPLATE_SYNC_TOKEN not configured; skipping template dispatch." >&2
           exit 0
         fi
-        
-        # Get version safely
-        VERSION=$(jq -r '.version' ../VERSION 2>/dev/null || echo "unknown")
-        echo "Deploying version: $VERSION"
-        
-        # Commit and push changes
-        git add -A
-        git commit -m "feat: Auto-deploy DevOps components $VERSION
-
-        Auto-deployment from vanman2024/devops
-        Commit: $GITHUB_SHA
-        Build date: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-        
-        git push origin $BRANCH_NAME
-        
-        # Create pull request using GitHub CLI
-        PR_URL=$(gh pr create \
-          --title "Auto-deploy DevOps $VERSION" \
-          --body "Automated deployment of DevOps components from vanman2024/devops
-        
-        ## Changes
-        - Updated DevOps automation tools
-        - Version: $VERSION
-        - Source commit: $GITHUB_SHA
-        
-        This PR was automatically created by the DevOps repository's semantic versioning workflow." \
-          --base main \
-          --head $BRANCH_NAME)
-        
-        # Auto-merge the PR
-        echo "🔄 Attempting to auto-merge PR: $PR_URL"
-        if gh pr merge $PR_URL --squash --delete-branch; then
-          echo "✅ Auto-merged PR: $PR_URL"
-        else
-          echo "❌ Auto-merge failed, PR created but requires manual merge: $PR_URL"
-          exit 1
-        fi
-
+        VERSION="${{ steps.component.outputs.version }}"
+        REF="${{ github.ref_name }}"
+        read -r -d '' PAYLOAD <<JSON
+{
+  "event_type": "component-release",
+  "client_payload": {
+    "component": "devops",
+    "source_repo": "vanman2024/devops",
+    "ref": "$REF",
+    "version": "$VERSION"
+  }
+}
+JSON
+        curl -L -X POST \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer $TEMPLATE_TOKEN" \
+          https://api.github.com/repos/vanman2024/multi-agent-claude-code/dispatches \
+          -d "$PAYLOAD"

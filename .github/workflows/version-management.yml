@@ -91,17 +91,11 @@ jobs:
         fi
         VERSION="${{ steps.component.outputs.version }}"
         REF="${{ github.ref_name }}"
-        read -r -d '' PAYLOAD <<JSON
-{
-  "event_type": "component-release",
-  "client_payload": {
-    "component": "devops",
-    "source_repo": "vanman2024/devops",
-    "ref": "$REF",
-    "version": "$VERSION"
-  }
-}
-JSON
+        PAYLOAD=$(jq -n \
+          --arg version "$VERSION" \
+          --arg ref "$REF" \
+          '{"event_type": "component-release", "client_payload": {"component": "devops", "source_repo": "vanman2024/devops", "ref": $ref, "version": $version}}'
+        )
         curl -L -X POST \
           -H "Accept: application/vnd.github+json" \
           -H "Authorization: Bearer $TEMPLATE_TOKEN" \

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "multiagent-devops"
-version = "1.4.0"
+version = "2.0.0"
 description = "DevOps CLI system for multi-agent development workflows"
 authors = [
     {name = "vanman2025", email = "noreply@example.com"},

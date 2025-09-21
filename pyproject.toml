@@ -3,7 +3,7 @@ requires = ["setuptools>=45", "wheel", "setuptools-scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "multi-agent-devops"
+name = "multiagent-devops"
 version = "1.4.0"
 description = "DevOps CLI system for multi-agent development workflows"
 authors = [
@@ -23,8 +23,12 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
+    "multiagent-core>=0.1.0",
+    "click>=8.0.0",
+    "rich>=10.0.0", 
     "pyyaml>=6.0",
     "toml>=0.10.2",
+    "requests>=2.25.0",
 ]
 
 [project.optional-dependencies]
@@ -37,11 +41,31 @@ dev = [
 ]
 
 [project.scripts]
-ops = "devops.cli:main"
+ops = "multiagent_devops.cli:main"
 
 [tool.setuptools.packages.find]
-where = ["."]
-include = ["ops*", "deploy*", "ci*"]
+where = ["src"]
+
+# ONLY include essential runtime files for end users
+[tool.setuptools.package-data]
+multiagent_devops = [
+    "runtime/*",
+    "templates/user/*",
+]
+
+# Exclude ALL development artifacts - users don't need DevOps's dev setup  
+[tool.setuptools.exclude-package-data]
+"*" = [
+    "ops/*",            # DevOps's own development CLI
+    "deploy/*",         # DevOps's internal deployment
+    "ci/*",             # DevOps's development CI  
+    ".github/*",        # DevOps's development workflows
+    "scripts/*",        # DevOps's development scripts
+    "CLAUDE.md",        # DevOps's development instructions
+    "*.md",
+    "*.yml",
+    "*.yaml",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

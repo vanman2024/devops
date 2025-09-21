@@ -29,6 +29,11 @@ jobs:
       with:
         node-version: '20'
 
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
     - name: Install semantic-release dependencies
       run: |
         npm install --no-save \
@@ -42,6 +47,7 @@ jobs:
       continue-on-error: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
       run: |
         # Create semantic-release config
         cat > .releaserc.json << 'EOF'
@@ -53,13 +59,14 @@ jobs:
             [
               "@semantic-release/exec",
               {
-                "prepareCmd": "echo '{\"version\": \"v${nextRelease.version}\", \"commit\": \"'$GITHUB_SHA'\", \"build_date\": \"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'\", \"build_type\": \"production\"}' > VERSION"
+                "prepareCmd": "node -e \"const fs = require('fs'); const versionData = { version: '${nextRelease.version}', commit: process.env.GITHUB_SHA, build_date: new Date().toISOString(), build_type: 'production' }; fs.writeFileSync('VERSION', JSON.stringify(versionData, null, 2)); const pyproject = fs.readFileSync('pyproject.toml', 'utf8'); const updatedPyproject = pyproject.replace(/version = \\\".+\\\"/, 'version = \\\"${nextRelease.version}\\\"'); fs.writeFileSync('pyproject.toml', updatedPyproject);\"",
+                "publishCmd": "python -m pip install --upgrade pip build twine && python -m build && python -m twine upload dist/* --username __token__ --password $PYPI_TOKEN"
               }
             ],
             [
               "@semantic-release/git",
               {
-                "assets": ["VERSION"],
+                "assets": ["VERSION", "pyproject.toml"],
                 "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
               }
             ],
@@ -71,104 +78,12 @@ jobs:
         # Run semantic-release
         npx semantic-release
 
-    - name: Sync DevOps to template repository
-      if: always()
-      env:
-        PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
-      run: |
-        # Get the current version from VERSION file
-        DEVOPS_VERSION=""
-        if [[ -f "VERSION" && -s "VERSION" ]]; then
-          DEVOPS_VERSION=$(cat VERSION | jq -r '.version // empty' 2>/dev/null || true)
-        fi
-        
-        # Fallback to latest git tag if VERSION file doesn't exist or is empty
-        if [[ -z "$DEVOPS_VERSION" ]]; then
-          DEVOPS_VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.8.0")
-        fi
-        
-        echo "🚀 Syncing DevOps $DEVOPS_VERSION to template..."
-        
-        # Clone template repository
-        git clone https://oauth2:${PAT_TOKEN}@github.com/vanman2024/multi-agent-claude-code /tmp/template
-        cd /tmp/template
-        
-        # Configure git
-        git config user.name "GitHub Action"
-        git config user.email "action@github.com"
-        
-        # Remove existing devops directory
-        rm -rf devops/*
-        
-        # Copy DevOps files with same exclusions as AgentSwarm
-        rsync -a \
-          --exclude 'tests/' \
-          --exclude 'tests/**' \
-          --exclude '*.toml' \
-          --exclude '__pycache__/' \
-          --exclude '.pytest_cache/' \
-          --exclude '.git/' \
-          --exclude '.github/' \
-          --exclude '*.pyc' \
-          --exclude '*.pyo' \
-          --exclude 'deploy-to-template.sh' \
-          --exclude 'scripts/intelligent-auto-deploy.sh' \
-          --exclude 'node_modules/' \
-          --exclude 'config/' \
-          --exclude 'docs/' \
-          --exclude 'specs/' \
-          --exclude '.releaserc.json' \
-          --exclude '.gitmessage' \
-          --exclude 'AGENTS.md' \
-          --exclude 'pytest.ini' \
-          --exclude 'package.json' \
-          --exclude 'package-lock.json' \
-          --exclude '.npmrc' \
-          --exclude '.env*' \
-          --exclude 'venv/' \
-          --exclude '.venv/' \
-          $GITHUB_WORKSPACE/ devops/
-        
-        # Update template VERSION file with new component version
-        echo "📋 Updating template VERSION file with devops $DEVOPS_VERSION..."
-        node -e "
-          const fs = require('fs');
-          const versionFile = 'VERSION';
-          let versionData = {};
-          
-          if (fs.existsSync(versionFile)) {
-            versionData = JSON.parse(fs.readFileSync(versionFile, 'utf8'));
-          }
-          
-          if (!versionData.components) {
-            versionData.components = {};
-          }
-          
-          versionData.components['devops'] = '$DEVOPS_VERSION';
-          
-          fs.writeFileSync(versionFile, JSON.stringify(versionData, null, 2) + '\n');
-          console.log('✅ Updated template VERSION with devops: $DEVOPS_VERSION');
-        "
-        
-        # Commit and push changes
-        git add devops/ VERSION
-        if git diff --staged --quiet; then
-          echo "✅ No changes to sync"
-        else
-          git commit -m "chore: sync devops to $DEVOPS_VERSION
-
-          Automated sync of DevOps component from vanman2024/devops.
-
-          🤖 Generated with [Claude Code](https://claude.ai/code)
-
-          Co-Authored-By: Claude <noreply@anthropic.com>"
-          git push
-          echo "✅ DevOps synced to template successfully"
-        fi
-
     - name: DevOps version management complete
       if: always()
       run: |
         echo "✅ DevOps version management workflow completed"
         echo "📦 DevOps version: $(cat VERSION | jq -r .version 2>/dev/null || echo 'unknown')"
-        echo "🚀 Template sync request sent to multi-agent-claude-code"
+        echo ""
+        echo "🚀 DevOps now manages its own independent versioning"
+        echo "📖 Projects can update via: pip install --upgrade multiagent-devops"
+        echo "📦 Published to PyPI automatically on version bump"

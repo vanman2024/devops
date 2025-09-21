@@ -1,0 +1,2 @@
+[console_scripts]
+ops = multiagent_devops.cli:main

@@ -440,6 +440,101 @@ cmd_release() {
     print_status "GitHub Actions will build and publish the release"
 }
 
+cmd_security() {
+    local scan_type="all"
+
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --dependencies) scan_type="dependencies"; shift ;;
+            --secrets) scan_type="secrets"; shift ;;
+            --code) scan_type="code"; shift ;;
+            --all) scan_type="all"; shift ;;
+            *) break ;;
+        esac
+    done
+
+    print_status "Running security scans ($scan_type)"
+
+    # Dependencies security scan
+    if [[ "$scan_type" == "dependencies" ]] || [[ "$scan_type" == "all" ]]; then
+        echo "🔒 Scanning dependencies for vulnerabilities..."
+        
+        # Python dependencies
+        if [[ -f "pyproject.toml" ]] || [[ -f "requirements.txt" ]]; then
+            activate_venv
+            if command -v safety >/dev/null 2>&1; then
+                safety check || print_warning "Some dependency vulnerabilities found"
+            else
+                print_info "Install 'safety' for dependency vulnerability scanning: pip install safety"
+            fi
+        fi
+        
+        # Node dependencies
+        if [[ -f "package.json" ]]; then
+            if command -v npm >/dev/null 2>&1; then
+                npm audit --audit-level moderate || print_warning "Some npm vulnerabilities found"
+            fi
+        fi
+    fi
+
+    # Secrets detection
+    if [[ "$scan_type" == "secrets" ]] || [[ "$scan_type" == "all" ]]; then
+        echo "🔍 Scanning for exposed secrets..."
+        
+        # Check for common secret patterns
+        local secret_patterns=(
+            "password\s*=\s*['\"][^'\"]*['\"]"
+            "api_key\s*=\s*['\"][^'\"]*['\"]"
+            "secret\s*=\s*['\"][^'\"]*['\"]"
+            "token\s*=\s*['\"][^'\"]*['\"]"
+            "AKIA[0-9A-Z]{16}"  # AWS Access Key
+            "sk_live_[0-9a-zA-Z]{24}"  # Stripe Live Key
+        )
+        
+        local secrets_found=false
+        for pattern in "${secret_patterns[@]}"; do
+            if grep -r -E "$pattern" . --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=venv --exclude="*.log" >/dev/null 2>&1; then
+                secrets_found=true
+                print_warning "Potential secret pattern found: $pattern"
+            fi
+        done
+        
+        if [[ "$secrets_found" == false ]]; then
+            print_success "No obvious secret patterns detected"
+        fi
+        
+        # Check .env files are gitignored
+        if [[ -f ".env" ]] && ! grep -q "\.env" .gitignore 2>/dev/null; then
+            print_warning ".env file exists but not in .gitignore"
+        fi
+    fi
+
+    # Code security scan
+    if [[ "$scan_type" == "code" ]] || [[ "$scan_type" == "all" ]]; then
+        echo "🛡️ Scanning code for security issues..."
+        
+        # Python security with bandit
+        if [[ -d "src" ]] && command -v bandit >/dev/null 2>&1; then
+            bandit -r src/ -f json -o security_report.json || print_warning "Some code security issues found"
+            if [[ -f "security_report.json" ]]; then
+                local issues=$(jq '.results | length' security_report.json 2>/dev/null || echo "0")
+                print_info "Found $issues potential security issues (see security_report.json)"
+            fi
+        elif [[ -d "src" ]]; then
+            print_info "Install 'bandit' for Python code security scanning: pip install bandit"
+        fi
+        
+        # Check file permissions
+        local suspicious_files=$(find . -type f \( -perm -4000 -o -perm -2000 \) 2>/dev/null | grep -v ".git" || true)
+        if [[ -n "$suspicious_files" ]]; then
+            print_warning "Files with suspicious permissions found:"
+            echo "$suspicious_files"
+        fi
+    fi
+
+    print_success "Security scan completed"
+}
+
 cmd_rollback() {
     local target_version="$1"
     local target_dir="${2:-$(get_targets | head -1)}"
@@ -636,6 +731,10 @@ case "${1:-help}" in
     qa)
         cmd_qa
         ;;
+    security)
+        shift
+        cmd_security "$@"
+        ;;
     build)
         shift
         cmd_build "$@"
@@ -679,6 +778,7 @@ USAGE:
 COMMANDS:
     setup [target]           Setup operations config and target directory
     qa [--backend|--frontend|--all]  Run quality checks (lint, format, typecheck, tests)
+    security [--dependencies|--secrets|--code|--all]  Run security scans
     build --target PATH      Build production version to target
     verify-prod [target]     Verify production build works correctly
     sync                     Sync to all configured targets
@@ -691,6 +791,7 @@ COMMANDS:
 EXAMPLES:
     ops setup ~/deploy/your-project    # Customize path for your project
     ops qa
+    ops security --all                 # Run comprehensive security scans
     ops build --target ~/deploy/your-project --force
     ops verify-prod
     ops release minor

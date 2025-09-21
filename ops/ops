@@ -34,6 +34,15 @@ print_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 print_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 print_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
+# Performance monitoring utilities
+measure_time() {
+    local start_time=$(date +%s.%3N)
+    "$@"
+    local end_time=$(date +%s.%3N)
+    local duration=$(echo "$end_time - $start_time" | bc -l 2>/dev/null || echo "N/A")
+    echo "⏱️ Operation completed in ${duration}s"
+}
+
 # Ensure we're in repo root
 cd "$REPO_ROOT"
 

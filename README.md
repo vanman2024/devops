@@ -37,11 +37,24 @@ target = "~/deploy/your-app"
 
 The tooling assumes a Python backend (pytest) but can be extended—edit `ops/ops`
 and `ops/commands/testing/run_tests.py` to add categories or change defaults.
-# Testing auto-deploy fixes
-# Auto-deploy workflow fixed
-# Auto-deploy workflow fully operational
-# Restored working workflow
-# Fixed auto-deploy: no deploy scripts in template, auto-merge enabled
-# Test semantic-release versioning
-# Git tag conflict resolved - testing v1.6.0 bump
-# Semantic-release properly detecting v1.5.0 as base version
+## Performance Monitoring
+
+### New Features
+- **Performance Monitoring**: Built-in timing and resource monitoring
+- **Benchmark Operations**: I/O performance testing and validation
+- **System Health Checks**: Automated disk usage and memory monitoring
+
+### Usage
+```bash
+# Run performance monitoring
+./ops/commands/performance-monitor.sh
+
+# Use timing wrapper for any command
+./ops/ops qa --with-timing
+```
+
+### Performance Enhancements
+- Added `measure_time()` utility for operation timing
+- Automatic performance threshold validation
+- Resource usage monitoring and alerts
+- Optimized error handling with fallback values

@@ -29,6 +29,8 @@ dependencies = [
     "pyyaml>=6.0",
     "toml>=0.10.2",
     "requests>=2.25.0",
+    "dataclasses-json>=0.5.0",
+    "pydantic>=2.0.0",
 ]
 
 [project.optional-dependencies]
@@ -76,6 +78,22 @@ python_functions = ["test_*"]
 [tool.black]
 line-length = 88
 target-version = ['py39']
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = ["E203", "W503"]
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    "*.egg-info",
+    ".venv",
+    "venv",
+    ".tox",
+    ".pytest_cache",
+    ".mypy_cache"
+]
 
 [tool.mypy]
 python_version = "3.9"

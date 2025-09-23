@@ -78,7 +78,7 @@
 ## Phase 3.5: Polish
 - [ ] T025 [P] @copilot Unit tests for models in tests/unit/test_models.py
 - [x] T026 @qwen Performance tests for CLI commands ✅
-- [ ] T027 [P] @qwen Update README.md with solo founder workflow
+- [x] T027 [P] @qwen Update README.md with solo founder workflow ✅
 - [ ] T028 @copilot Run quickstart validation
 
 ## Dependencies

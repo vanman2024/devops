@@ -8,8 +8,10 @@ import sys
 import os
 from pathlib import Path
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+# Ensure the repository's src directory is importable when executed via subprocess
+COMMAND_PATH = Path(__file__).resolve()
+SRC_ROOT = COMMAND_PATH.parents[3]
+sys.path.insert(0, str(SRC_ROOT))
 
 from multiagent_devops.models import Spec, DeploymentPlan
 

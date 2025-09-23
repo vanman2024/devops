@@ -9,10 +9,12 @@ import json
 from pathlib import Path
 import subprocess
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+# Ensure the repository's src directory is importable when executed via subprocess
+COMMAND_PATH = Path(__file__).resolve()
+SRC_ROOT = COMMAND_PATH.parents[3]  # .../repo/src
+sys.path.insert(0, str(SRC_ROOT))
 
-from multiagent_devops.models import QAReport
+from multiagent_devops.models import QAReport, Spec
 
 def main():
     parser = argparse.ArgumentParser(description="Enhanced QA with security scans and performance monitoring")
@@ -26,6 +28,18 @@ def main():
     if not spec_path.exists():
         print(f"Error: Spec path {spec_path} does not exist", file=sys.stderr)
         sys.exit(1)
+
+    spec_file = spec_path / "spec.md"
+    acceptance_criteria = []
+    spec_title = spec_path.name
+
+    if spec_file.exists():
+        try:
+            spec = Spec.from_spec_file(str(spec_file))
+            acceptance_criteria = spec.acceptance_criteria
+            spec_title = spec.title or spec_title
+        except Exception as exc:
+            print(f"Warning: Failed to parse spec for QA ({exc})", file=sys.stderr)
 
     print(f"Running enhanced QA for {spec_path.name}")
     print(f"Security scan: {args.security_scan}")
@@ -82,13 +96,24 @@ def main():
     print(f"Coverage: {coverage_result}% ({'PASSED' if coverage_passed else 'FAILED'})")
 
     # Create QA report
+    acceptance_validated = bool(acceptance_criteria and test_passed and coverage_passed and len(security_issues) == 0)
+
+    overall_pass = all([
+        test_passed,
+        coverage_passed,
+        len(security_issues) == 0,
+        acceptance_validated or not acceptance_criteria,
+    ])
+
     report = QAReport(
-        spec_name=spec_path.name,
+        spec_name=spec_title,
         tests_passed=test_passed,
         coverage_percentage=coverage_result,
         security_issues=security_issues,
         performance_results=performance_results,
-        overall_status="PASS" if all([test_passed, coverage_passed, len(security_issues) == 0]) else "FAIL"
+        acceptance_criteria=acceptance_criteria,
+        acceptance_validated=acceptance_validated,
+        overall_status="PASS" if overall_pass else "FAIL"
     )
 
     # Save QA report
@@ -114,6 +139,10 @@ def main():
             "performance": {
                 "tested": args.performance_test,
                 "results": performance_results
+            },
+            "acceptance": {
+                "criteria": acceptance_criteria,
+                "validated": acceptance_validated
             },
             "overall_status": report.overall_status
         }, f, indent=2)

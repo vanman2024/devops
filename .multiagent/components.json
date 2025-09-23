@@ -1,0 +1,27 @@
+{
+  "framework_version_metadata": {
+    "version": "3.2.0",
+    "commit": "550f98bb454ae44199ca27d75ef8794c65744cd4",
+    "build_date": "2025-09-22T23:06:38.318Z",
+    "build_type": "production"
+  },
+  "framework_version": "3.2.0",
+  "installation_order": [],
+  "linked_components": {
+    "agentswarm": {
+      "source": "/home/vanman2025/Projects/agentswarm",
+      "description": "Multi-agent orchestration and coordination",
+      "linked": false
+    },
+    "devops": {
+      "source": "/home/vanman2025/Projects/devops",
+      "description": "DevOps automation and CI/CD tools",
+      "linked": false
+    },
+    "testing": {
+      "source": "/home/vanman2025/Projects/multiagent-testing",
+      "description": "Testing framework and automation",
+      "linked": false
+    }
+  }
+}

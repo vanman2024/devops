@@ -1,0 +1,75 @@
+{
+  "command": "ops deploy-plan",
+  "description": "Generate and execute deployment plan for multiple targets with rollback capabilities",
+  "input": {
+    "type": "object",
+    "properties": {
+      "spec_path": {
+        "type": "string",
+        "description": "Path to spec directory"
+      },
+      "target": {
+        "type": "string",
+        "enum": [
+          "docker",
+          "azure",
+          "aws",
+          "script"
+        ],
+        "description": "Deployment target"
+      },
+      "environment": {
+        "type": "string",
+        "enum": [
+          "dev",
+          "staging",
+          "prod"
+        ],
+        "description": "Target environment"
+      },
+      "rollback_on_failure": {
+        "type": "boolean",
+        "default": true,
+        "description": "Enable automatic rollback on deployment failure"
+      }
+    },
+    "required": [
+      "spec_path",
+      "target",
+      "environment"
+    ]
+  },
+  "output": {
+    "type": "object",
+    "properties": {
+      "deployment_id": {
+        "type": "string",
+        "description": "Unique deployment identifier"
+      },
+      "target_config": {
+        "type": "object",
+        "description": "Target-specific configuration applied"
+      },
+      "rollback_plan": {
+        "type": "object",
+        "description": "Rollback configuration if enabled"
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "planned",
+          "deploying",
+          "deployed",
+          "failed",
+          "rolled_back"
+        ]
+      }
+    }
+  },
+  "errors": [
+    "Unsupported deployment target",
+    "Environment configuration missing",
+    "Deployment execution failed",
+    "Rollback failed"
+  ]
+}

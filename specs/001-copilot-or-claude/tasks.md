@@ -49,7 +49,7 @@
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
 **CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
-- [ ] T004 [P] @claude Contract test for ops-spec-init command in tests/contract/test_ops_spec_init.py
+- [x] T004 [P] @claude Contract test for ops-spec-init command in tests/contract/test_ops_spec_init.py ✅
 - [x] T005 [P] @qwen Contract test for ops-swarm-deploy command in tests/contract/test_ops_swarm_deploy.py ✅
 - [ ] T006 [P] @codex Contract test for ops-qa command in tests/contract/test_ops_qa.py
 - [x] T007 [P] @qwen Contract test for ops-deploy-plan command in tests/contract/test_ops_deploy_plan.py ✅
@@ -72,7 +72,7 @@
 
 ## Phase 3.4: Integration
 - [ ] T022 @codex Add logging and monitoring for agent swarms
-- [ ] T023 @claude Integrate with multiagent-agentswarm for orchestration
+- [x] T023 @claude Integrate with multiagent-agentswarm for orchestration ✅
 - [ ] T024 @codex Add error handling and rollback logic
 
 ## Phase 3.5: Polish

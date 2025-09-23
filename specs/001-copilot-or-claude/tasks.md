@@ -52,7 +52,7 @@
 - [ ] T004 [P] @claude Contract test for ops-spec-init command in tests/contract/test_ops_spec_init.py
 - [x] T005 [P] @qwen Contract test for ops-swarm-deploy command in tests/contract/test_ops_swarm_deploy.py ✅
 - [ ] T006 [P] @codex Contract test for ops-qa command in tests/contract/test_ops_qa.py
-- [ ] T007 [P] @qwen Contract test for ops-deploy-plan command in tests/contract/test_ops_deploy_plan.py
+- [x] T007 [P] @qwen Contract test for ops-deploy-plan command in tests/contract/test_ops_deploy_plan.py ✅
 - [ ] T008 [P] @codex Integration test for spec parsing and plan generation in tests/integration/test_spec_init.py
 - [ ] T009 [P] @qwen Integration test for agent swarm deployment in tests/integration/test_swarm_deploy.py
 - [ ] T010 [P] @codex Integration test for QA validation in tests/integration/test_qa_validation.py

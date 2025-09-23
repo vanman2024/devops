@@ -1,0 +1,67 @@
+{
+  "command": "ops qa",
+  "description": "Expand QA to include automated testing, security scans, performance monitoring, validated against spec acceptance criteria",
+  "input": {
+    "type": "object",
+    "properties": {
+      "spec_path": {
+        "type": "string",
+        "description": "Path to spec directory"
+      },
+      "include_security": {
+        "type": "boolean",
+        "default": true,
+        "description": "Include security scans"
+      },
+      "include_performance": {
+        "type": "boolean",
+        "default": true,
+        "description": "Include performance monitoring"
+      }
+    },
+    "required": [
+      "spec_path"
+    ]
+  },
+  "output": {
+    "type": "object",
+    "properties": {
+      "tests_passed": {
+        "type": "integer",
+        "description": "Number of tests passed"
+      },
+      "tests_failed": {
+        "type": "integer",
+        "description": "Number of tests failed"
+      },
+      "security_issues": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "List of security vulnerabilities found"
+      },
+      "performance_metrics": {
+        "type": "object",
+        "description": "Performance measurements"
+      },
+      "compliance_status": {
+        "type": "boolean",
+        "description": "Whether spec acceptance criteria are met"
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "passed",
+          "failed",
+          "error"
+        ]
+      }
+    }
+  },
+  "errors": [
+    "Spec acceptance criteria not found",
+    "Test execution failed",
+    "Security scan timeout"
+  ]
+}

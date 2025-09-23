@@ -1,0 +1,45 @@
+{
+  "command": "ops spec-init",
+  "description": "Parse spec-kit spec and generate deployment plan, CI/CD pipeline, and QA checks",
+  "input": {
+    "type": "object",
+    "properties": {
+      "spec_path": {
+        "type": "string",
+        "description": "Path to spec directory (e.g., specs/001-feature)"
+      }
+    },
+    "required": [
+      "spec_path"
+    ]
+  },
+  "output": {
+    "type": "object",
+    "properties": {
+      "deployment_plan": {
+        "type": "object",
+        "description": "Generated deployment configuration"
+      },
+      "ci_cd_pipeline": {
+        "type": "object",
+        "description": "CI/CD pipeline steps"
+      },
+      "qa_checks": {
+        "type": "array",
+        "description": "List of QA validation steps"
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "success",
+          "error"
+        ]
+      }
+    }
+  },
+  "errors": [
+    "Spec directory not found",
+    "Invalid spec.md format",
+    "Missing tasks.md"
+  ]
+}

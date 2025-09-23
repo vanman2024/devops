@@ -1,0 +1,52 @@
+{
+  "command": "ops swarm-deploy",
+  "description": "Deploy agent swarm to parallelize tasks from tasks.md",
+  "input": {
+    "type": "object",
+    "properties": {
+      "spec_path": {
+        "type": "string",
+        "description": "Path to spec directory"
+      },
+      "agents": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "List of agents to include (@copilot, @claude, etc.)"
+      }
+    },
+    "required": [
+      "spec_path"
+    ]
+  },
+  "output": {
+    "type": "object",
+    "properties": {
+      "swarm_id": {
+        "type": "string",
+        "description": "Unique swarm identifier"
+      },
+      "tasks_assigned": {
+        "type": "integer",
+        "description": "Number of tasks deployed"
+      },
+      "monitoring_url": {
+        "type": "string",
+        "description": "URL for real-time log monitoring"
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "deployed",
+          "error"
+        ]
+      }
+    }
+  },
+  "errors": [
+    "Tasks.md not found",
+    "No valid agent assignments",
+    "Swarm deployment failed"
+  ]
+}

@@ -1,6 +1,11 @@
+multiagent-core>=0.1.0
+click>=8.0.0
+rich>=10.0.0
 pyyaml>=6.0
 toml>=0.10.2
-multiagent-core>=0.1.0
+requests>=2.25.0
+dataclasses-json>=0.5.0
+pydantic>=2.0.0
 
 [dev]
 pytest>=7.0

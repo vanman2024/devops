@@ -12,3 +12,13 @@ src/multiagent_devops/../../ci/README.md
 src/multiagent_devops/../../deploy/deploy
 src/multiagent_devops/../../ops/ops
 src/multiagent_devops/../../ops/validate
+src/multiagent_devops/ops/commands/deploy_plan.py
+src/multiagent_devops/ops/commands/founder_mode.py
+src/multiagent_devops/ops/commands/qa.py
+src/multiagent_devops/ops/commands/spec_init.py
+src/multiagent_devops/ops/commands/swarm_deploy.py
+src/multiagent_devops/ops/commands/agents/agent-coordinator.py
+src/multiagent_devops/ops/commands/data-processing/check_existing_contacts.py
+src/multiagent_devops/ops/commands/data-processing/convert_to_csv.py
+src/multiagent_devops/ops/commands/data-processing/create_test_sample.py
+src/multiagent_devops/ops/commands/testing/run_tests.py

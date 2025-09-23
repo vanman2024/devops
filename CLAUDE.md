@@ -4,48 +4,49 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a DevOps template toolbox providing lightweight CLI helpers for Python-based projects. It offers unified interfaces for quality assurance, building, and deployment operations through two main CLI tools: `ops` and `deploy`.
+This is a DevOps template toolbox providing lightweight CLI helpers for Python-based projects. It offers unified interfaces for quality assurance, building, and deployment operations through both legacy script-based tools and a modern Python CLI.
 
 ## Core Commands
 
-### Quality Assurance & Development
+### New Python CLI (Primary Interface)
 ```bash
-# Quality checks (pytest + optional linting)
-./devops/ops/ops qa
-
-# Run backend tests only
-./devops/ops/ops qa --backend
-
-# Build production bundle
-./devops/ops/ops build --target ~/deploy/project --force
-
-# Verify production build works
-./devops/ops/ops verify-prod
-
-# Check project status
-./devops/ops/ops status
-
-# Environment diagnostics
-./devops/ops/ops env doctor
-
-# Release management
-./devops/ops/ops release [patch|minor|major]
-./devops/ops/ops rollback v1.2.3
+# Install and use the main CLI
+pip install -e .
+ops qa --spec-path specs/001-feature --security-scan
+ops build --target ~/deploy/project
+ops status
+ops release minor
 ```
 
-### Deployment
+### Legacy DevOps Scripts (Template System)
 ```bash
-# Deploy to production
-./devops/deploy/deploy production ~/deploy/project
+# Quality checks (pytest + optional linting)
+./src/multiagent_devops/ops/ops qa --spec-path PATH
 
-# Simple deployment
-./devops/deploy/deploy simple ~/deploy/staging
+# Build production bundle
+./src/multiagent_devops/ops/ops build --target ~/deploy/project --force
 
-# Build only
-./devops/deploy/deploy build ~/test-build --force
+# Verify production build works
+./src/multiagent_devops/ops/ops verify-prod
 
-# Export bundle
-./devops/deploy/deploy export ~/export-dir
+# Check project status
+./src/multiagent_devops/ops/ops status
+
+# Environment diagnostics
+./src/multiagent_devops/ops/ops env doctor
+
+# Security scans
+./src/multiagent_devops/ops/ops security --all
+
+# Release management
+./src/multiagent_devops/ops/ops release [patch|minor|major]
+./src/multiagent_devops/ops/ops rollback v1.2.3
+
+# Multi-agent workflow commands
+./src/multiagent_devops/ops/ops spec-init --spec-path PATH
+./src/multiagent_devops/ops/ops swarm-deploy --spec-path PATH --agents @copilot,@claude
+./src/multiagent_devops/ops/ops deploy-plan --spec-path PATH --target docker --environment prod
+./src/multiagent_devops/ops/ops founder-mode --spec-path PATH --mode full --auto-deploy
 ```
 
 ### Testing
@@ -79,10 +80,12 @@ This is a DevOps template toolbox providing lightweight CLI helpers for Python-b
 - **deploy/commands/**: Deployment script implementations
 
 ### Package Structure
-- Python package name: `multi-agent-devops`
-- Main source in `src/` directory (not currently present but expected)
-- Entry point via `[project.scripts]` as `ops = "devops.cli:main"`
-- Package discovery includes: `ops*`, `deploy*`, `ci*`
+- Python package name: `multiagent-devops`
+- Main source in `src/multiagent_devops/` directory 
+- Entry point via `[project.scripts]` as `ops = "multiagent_devops.cli:main"`
+- Dual architecture: New Python CLI + Legacy template scripts
+- CLI implementations in `src/multiagent_devops/ops/commands/` (Python) and `src/multiagent_devops/ops/ops` (Bash)
+- Deployment scripts in `src/multiagent_devops/deploy/`
 
 ### Environment Management
 - Automatic virtual environment detection (`.venv/` or `venv/`)
@@ -111,6 +114,106 @@ This is a DevOps template toolbox providing lightweight CLI helpers for Python-b
 4. Use `ops release` for version bumping and Git operations
 5. Use `deploy production` for actual deployment operations
 
+## Multi-Agent Coordination System
+
+### Agent Identity: @claude (Strategic Technical Leadership)
+
+**Primary Function**: CTO-level engineering reviewer and strategic guide
+- **Architecture Decisions**: Make critical technical decisions
+- **Quality Gates**: Review and validate work from other agents  
+- **Integration Oversight**: Resolve complex integration issues
+- **Code Quality**: Ensure consistency and best practices
+- **Strategic Direction**: Guide technical direction and priorities
+
+### Available Subagents
+When needed, use the Task tool to launch specialized agents:
+- `general-purpose` - Research, multi-step tasks
+- `code-refactorer` - Large-scale refactoring
+- `pr-reviewer` - Code review & standards
+- `backend-tester` - API testing
+- `integration-architect` - Multi-service integration  
+- `system-architect` - Database & API design
+- `security-auth-compliance` - Authentication & security
+- `frontend-playwright-tester` - E2E UI testing
+
+### Task Assignment Protocol
+
+Check for assigned tasks in spec directories:
+```bash
+# Check current sprint assignments
+grep "@claude" specs/*/tasks.md
+
+# Check incomplete tasks
+grep -B1 -A1 "\[ \] .*@claude" specs/*/tasks.md
+```
+
+Task format:
+```markdown
+- [ ] T010 @claude Design database schema architecture  
+- [ ] T025 @claude Coordinate API integration testing
+- [x] T031 @claude FastAPI callback server ✅
+```
+
+### Commit Standards
+
+Every commit must follow this format:
+```bash
+git commit -m "[WORKING] feat: Add authentication system
+
+Related to #123
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+Co-Authored-By: @qwen <noreply@anthropic.com>  
+Co-Authored-By: @gemini <noreply@anthropic.com>
+Co-Authored-By: @codex <noreply@anthropic.com>
+Co-Authored-By: @copilot <noreply@anthropic.com>"
+```
+
+**State Markers:**
+- `[STABLE]` - Production ready, fully tested
+- `[WORKING]` - Functional but needs more testing
+- `[WIP]` - Work in progress, may have issues  
+- `[HOTFIX]` - Emergency fix
+
+### Task Completion Requirements
+- ✅ **ALWAYS commit code changes when completing tasks**
+- ✅ **ALWAYS mark tasks complete with `[x]` symbol** 
+- ✅ **ALWAYS reference task numbers in commits**
+- ❌ **NEVER leave uncommitted work**
+
+## Strategic Vision & Improvement Areas
+
+### Unified Spec-Component-Agent Architecture
+The DevOps system is evolving toward intelligent, spec-driven development where:
+- **Specs are the source of truth**: Everything derives from spec definitions
+- **Components auto-install**: Based on spec requirements analysis  
+- **Agents self-organize**: Tasks route to agents based on capabilities
+- **Progressive enhancement**: Start minimal, scale up as needed
+
+### Key Improvement Focus Areas
+1. **Spec Analysis**: Extract requirements to auto-determine needed components
+2. **Smart Agent Routing**: Match tasks to agent strengths automatically
+3. **Component Discovery**: Install only what's needed based on specs
+4. **Unified Monitoring**: Single dashboard for all aspects (specs/agents/components)
+5. **Self-Healing**: Auto-fix common issues without human intervention
+
+### Working with Components
+Components in `/components/` directory are modular additions:
+- **testing**: Multi-agent testing framework
+- **agentswarm**: Agent orchestration and coordination
+- Each component should provide spec templates and task templates
+- Components should be discoverable and auto-installable
+
+### Agent Capability Awareness
+When assigning tasks, consider agent specializations:
+- **@copilot**: Fast backend implementation, CRUD, APIs
+- **@claude**: Architecture, security, integration, review
+- **@codex**: Frontend UI, React, interactive features
+- **@qwen**: Performance optimization, algorithms
+- **@gemini**: Documentation, research, analysis
+
 ## Important Notes
 
 - The system assumes Python backend with pytest
@@ -119,3 +222,6 @@ This is a DevOps template toolbox providing lightweight CLI helpers for Python-b
 - WSL environment detection and optimization included
 - Git hooks available for auto-sync functionality
 - Template-based system designed for copying to other projects
+- Multi-agent workflow with spec-based task coordination
+- Founder mode available for guided solo development workflows
+- See DEVOPS_IMPROVEMENT_PLAN.md for strategic roadmap

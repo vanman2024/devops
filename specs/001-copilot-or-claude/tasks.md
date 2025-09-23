@@ -56,7 +56,7 @@
 - [ ] T008 [P] @codex Integration test for spec parsing and plan generation in tests/integration/test_spec_init.py
 - [x] T009 [P] @qwen Integration test for agent swarm deployment in tests/integration/test_swarm_deploy.py ✅
 - [ ] T010 [P] @codex Integration test for QA validation in tests/integration/test_qa_validation.py
-- [ ] T011 [P] @qwen Integration test for deployment with rollback in tests/integration/test_deployment.py
+- [x] T011 [P] @qwen Integration test for deployment with rollback in tests/integration/test_deployment.py ✅
 
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
 - [ ] T012 [P] @copilot Create Spec model in src/multiagent_devops/models/spec.py
